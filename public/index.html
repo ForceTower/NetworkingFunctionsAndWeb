@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Welcome to Firebase Hosting</title>
+
+    <!-- update the version number as needed -->
+    <script defer src="/__/firebase/7.10.0/firebase-app.js"></script>
+    <!-- include only the Firebase features as you need -->
+    <script defer src="/__/firebase/7.10.0/firebase-auth.js"></script>
+    <script defer src="/__/firebase/7.10.0/firebase-firestore.js"></script>
+    <!-- initialize the SDK after all desired features are loaded -->
+    <script defer src="/__/firebase/init.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/ui/4.4.0/firebase-ui-auth.js"></script>
+    <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/4.4.0/firebase-ui-auth.css" />
+
+    <style media="screen">
+      body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
+      #message { background: white; margin: 100px; padding: 32px 24px; border-radius: 3px; }
+      #message h2 { color: #ffa100; font-weight: bold; font-size: 16px; margin: 0 0 8px; }
+      #message h1 { font-size: 22px; font-weight: 300; color: rgba(0,0,0,0.6); margin: 0 0 16px;}
+      #message p { line-height: 140%; font-size: 14px; }
+      #message a { display: block; text-align: center; background: #039be5; text-transform: uppercase; text-decoration: none; color: white; padding: 16px; border-radius: 4px; }
+      #message, #message a { box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24); }
+      #load { color: rgba(0,0,0,0.4); text-align: center; font-size: 13px; }
+      @media (max-width: 600px) {
+        body, #message { margin-top: 0; background: white; box-shadow: none; }
+        body { border-top: 16px solid #ffa100; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="message">
+      <h2>Bem vindo</h2>
+      <h1>Vamos conversar</h1>
+      <button onclick="login()">login</button>
+
+      <div id="chat">
+
+      </div>
+      <div>
+        <input id="input" type="text" placeholder="Digite sua mensagem">
+        <button onclick="sendMessage()">send</button>
+      </div>
+    </div>
+
+    <script>
+      let userId = undefined
+      document.addEventListener('DOMContentLoaded', function() {
+        firebase.firestore().collection('messages').orderBy('createdAt').onSnapshot((snapshot) => {
+          const elements = snapshot.docs.reduce((accumulator, element) => {
+            const { content, sender } = element.data()
+            return accumulator + `<p>${sender}: ${content}</p>`
+          }, '');
+          document.getElementById('chat').innerHTML = elements
+        })
+      });
+
+      document.getElementById('input').addEventListener('keyup', function(e) {
+        const key = e.which || e.keyCode;
+        if (key == 13) {
+          sendMessage()
+        }
+      });
+
+      function sendMessage(params) {
+        if (!userId) {
+          alert('Você precisa fazer login para participar do chat')
+          return
+        }
+        firebase.firestore().collection('messages').add({
+          userId,
+          sender: 'joaquin',
+          content: document.getElementById('input').value
+        })
+        .catch((error) => {
+          alert('Erro ao enviar mensagem')
+        })
+      }
+
+      function login() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        firebase.auth().signInWithPopup(provider).then((result) => {
+        const token = result.credential.accessToken;
+        const user = result.user;
+        console.log(user)
+        const {
+          uid,
+          displayName,
+          photoURL,
+          email
+        } = user
+        
+        userId = uid
+
+        alert(`Boas vindas, ${displayName}`)
+        firebase.firestore().collection('users').doc(uid).set({
+          displayName,
+          photoURL,
+          email
+        }, { merge: true }).then().catch()
+      }).catch(function(error) {
+        // Handle Errors here.
+        const errorCode = error.code;
+        const errorMessage = error.message;
+        alert(`Falhou ao autenticar. Erro ${errorCode}; ${errorMessage}`)
+      });
+      }
+    </script>
+  </body>
+</html>
